@@ -147,7 +147,7 @@ const data = {
     <>
       <Sidebar collapsible="icon" {...props}>
         <SidebarHeader>
-          <h4 className="py-4 px-2">Название компании</h4>
+          <h4 className="py-4 px-2">ROMANOV DEV</h4>
         </SidebarHeader>
         <SidebarContent>
           <NavMain items={data.navMain} />

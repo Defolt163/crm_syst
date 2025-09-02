@@ -26,10 +26,18 @@ import {
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { InfoIcon } from "lucide-react"
+import { InfoIcon, Pencil } from "lucide-react"
+//import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@radix-ui/react-popover"
+import { Spinner } from "@radix-ui/themes"
+import { useRouter } from "next/navigation"
 const crypto = require('crypto');
 
+
 export default function StaffTable(props){
+    const router = useRouter()
 
     const { userData } = useData()
     const [staff, setStaff] = useState([])
@@ -185,9 +193,99 @@ export default function StaffTable(props){
             toast.error(`Ошибка сервера`)
         })
     }
+    const [newUserName, setNewUserName] = useState('')
+    const [newUserPost, setNewUserPost] = useState('')
+    const [newUserPhone, setNewUserPhone] = useState('')
+    const [newUserEmail, setNewUserEmail] = useState('')
     useEffect(()=>{
+        setNewUserName(selectedUser?.userName)
+        setNewUserPost(selectedUser?.userPost)
+        setNewUserPhone(selectedUser?.userPhone)
+        setNewUserEmail(selectedUser?.userEmail)
         console.log(selectedUser)
     }, [selectedUser])
+    const [buttonLoading, setButtonLoading] = useState(false)
+    async function updateUserInfo(userId, updateField, newDataField){
+        const token = getCookie('token')
+        setButtonLoading(true)
+        try{
+            const response = await fetch('/api/user-edit',
+                {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        updateField: updateField,
+                        newDataField: newDataField
+                    })
+                }
+            )
+            if(!response.ok){
+                toast.error(`Ошибка обновления`)
+                setButtonLoading(false)
+            }
+            else if(updateField == 'userName'){
+                setSelectedUser(prev => ({...prev, userName: newDataField}));
+                setStaff(prevStaff => prevStaff.map(u => 
+                    u.userId === userId ? {...u, userName: newDataField} : u
+                ));
+            }
+            else if(updateField == 'userPhone'){
+                setSelectedUser(prev => ({...prev, userPhone: newDataField}));
+                setStaff(prevStaff => prevStaff.map(u => 
+                    u.userId === userId ? {...u, userPhone: newDataField} : u
+                ));
+            }
+            else if(updateField == 'userEmail'){
+                setSelectedUser(prev => ({...prev, userEmail: newDataField}));
+                setStaff(prevStaff => prevStaff.map(u => 
+                    u.userId === userId ? {...u, userEmail: newDataField} : u
+                ));
+            }
+            else if(updateField == 'userPost'){
+                setSelectedUser(prev => ({...prev, userPost: newDataField}));
+                setStaff(prevStaff => prevStaff.map(u => 
+                    u.userId === userId ? {...u, userPost: newDataField} : u
+                ));
+            }
+            setButtonLoading(false)
+            toast.success(`Данные пользователя успешно обновлены`)
+        }
+        catch{
+            toast.error(`Ошибка сервера`)
+        }
+    }
+    async function removeUserFromTask(taskId, userId){
+        const token = getCookie('token')
+        setButtonLoading(true)
+        try{
+            const response = await fetch('/api/user-edit/remove-user-from-task',
+                {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        taskId: taskId,
+                    })
+                }
+            )
+            if(!response.ok){
+                toast.error(`Ошибка снятия с задачи`)
+                setButtonLoading(false)
+            }
+            setButtonLoading(false)
+            toast.success(`Сотрудник снят с задачи`)
+        }
+        catch{
+            toast.error(`Ошибка сервера`)
+        }
+    }
     return(
         <div className={`rounded-md border border-gray-200 ${props.width}`}>
             <Table>
@@ -203,7 +301,7 @@ export default function StaffTable(props){
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {staff.map((user)=>(
+                        {staff?.map((user)=>(
                             <TableRow key={staff.length++} className={"border-gray-200"}>
                                 <TableCell className="font-medium py-4">{user.userName}</TableCell>
                                 <TableCell>{user.userPost}</TableCell>
@@ -237,10 +335,66 @@ export default function StaffTable(props){
                         <SheetDescription>Информация о пользователе</SheetDescription>
                     </SheetHeader>
                     <div className="px-4">
-                        <h3 className="font-semibold text-black text-lg mb-4">{selectedUser?.userName}</h3>
-                        <h3 className="font-semibold text-gray-900 text-base mb-2">Должность: {selectedUser?.userPost}</h3>
-                        <h3 className="font-semibold text-gray-900 text-base mb-2">Телефон: {selectedUser?.userPhone}</h3>
-                        <h3 className="font-semibold text-gray-900 text-base mb-2">Email: {selectedUser?.userEmail}</h3>
+                        <h3 className="relative z-[4] font-semibold text-black text-lg mb-4 flex items-center">{selectedUser?.userName} {userData?.userRole === 'admin' ? 
+                        <Popover>
+                            <PopoverTrigger asChild><Pencil className="w-[15px] cursor-pointer ml-2 text-gray-400"/></PopoverTrigger>
+                            <PopoverContent sideOffset={5} align='end'>
+                                <div className="bg-white p-4 shadow-[0_0_35px_rgba(0,0,0,0.35)] rounded-md z-[999]">
+                                    <p className="text-muted-foreground text-sm">Редактирование</p>
+                                    <Spinner/>
+                                    <Input
+                                        className="col-span-2 h-8 my-2"
+                                        value={newUserName}
+                                        onChange={(e)=>{setNewUserName(e.target.value)}}
+                                    />
+                                    <Button disabled={!buttonLoading ? false : true} onClick={()=>{updateUserInfo(selectedUser?.userId, 'userName', newUserName)}}>{!buttonLoading ? 'Сохранить' :<span className="loader"></span>}</Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover> : null}</h3>
+                        <h3 className="relative z-[3] font-semibold text-gray-900 text-base mb-2 flex items-center">Должность: {selectedUser?.userPost} {userData?.userRole === 'admin' ? <Popover>
+                            <PopoverTrigger asChild><Pencil className="w-[15px] cursor-pointer ml-2 text-gray-400"/></PopoverTrigger>
+                            <PopoverContent sideOffset={5} align='end'>
+                                <div className="bg-white p-4 shadow-[0_0_35px_rgba(0,0,0,0.35)] rounded-md z-[999]">
+                                    <p className="text-muted-foreground text-sm">Редактирование</p>
+                                    <Input
+                                        value={newUserPost}
+                                        onChange={(e)=>{setNewUserPost(e.target.value)}}
+                                        className="col-span-2 h-8 my-2"
+                                    />
+                                    <Button disabled={!buttonLoading ? false : true} onClick={()=>{updateUserInfo(selectedUser?.userId, 'userPost', newUserPost)}}>{!buttonLoading ? 'Сохранить' :<span className="loader"></span>}</Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover> : null}</h3>
+                        <h3 className="relative z-[2] font-semibold text-gray-900 text-base mb-2 flex items-center">Телефон: {selectedUser?.userPhone} {userData?.userRole === 'admin' ? <Popover>
+                            <PopoverTrigger asChild><Pencil className="w-[15px] cursor-pointer ml-2 text-gray-400"/></PopoverTrigger>
+                            <PopoverContent sideOffset={5} align='end'>
+                                <div className="bg-white p-4 shadow-[0_0_35px_rgba(0,0,0,0.35)] rounded-md z-[999]">
+                                    <p className="text-muted-foreground text-sm">Редактирование</p>
+                                    <Input
+                                        value={newUserPhone}
+                                        onChange={(e)=>{setNewUserPhone(e.target.value)}}
+                                        className="col-span-2 h-8 my-2"
+                                        type='number'
+                                    />
+                                    <Button disabled={!buttonLoading ? false : true} onClick={()=>{updateUserInfo(selectedUser?.userId, 'userPhone', newUserPhone)}}>{!buttonLoading ? 'Сохранить' :<span className="loader"></span>}</Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover> : null}</h3>
+                        <h3 className="relative z-[1] font-semibold text-gray-900 text-base mb-2 flex items-center">Email: {selectedUser?.userEmail} {userData?.userRole === 'admin' ? <Popover>
+                            <PopoverTrigger asChild><Pencil className="w-[15px] cursor-pointer ml-2 text-gray-400"/></PopoverTrigger>
+                            <PopoverContent sideOffset={5} align='end'>
+                                <div className="bg-white p-4 shadow-[0_0_35px_rgba(0,0,0,0.35)] rounded-md z-[999]">
+                                    <p className="text-muted-foreground text-sm">Редактирование</p>
+                                    <Input
+                                        value={newUserEmail}
+                                        onChange={(e)=>{setNewUserEmail(e.target.value)}}
+                                        className="col-span-2 h-8 my-2"
+                                        type='email'
+                                    />
+                                    <Button disabled={!buttonLoading ? false : true} onClick={()=>{updateUserInfo(selectedUser?.userId, 'userEmail', newUserEmail)}}>{!buttonLoading ? 'Сохранить' :<span className="loader"></span>}</Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover> : null}</h3>
                         {userData?.userRole === 'admin' ? 
                             <>
                                 <h3 className="flex items-center font-semibold text-gray-900 text-base mb-2">
@@ -284,6 +438,7 @@ export default function StaffTable(props){
                                         <TableRow className={"border-gray-200 text-gray-700"}>
                                             <TableHead className="w-[100px]">Задача</TableHead>
                                             <TableHead className="w-[100px]">Описание</TableHead>
+                                            <TableHead className="w-[100px]">Действие</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -291,6 +446,29 @@ export default function StaffTable(props){
                                             <TableRow key={task.taskId} className={"border-gray-200 text-gray-700"}>
                                                 <TableCell className="w-[100px]">{task.taskId}</TableCell>
                                                 <TableCell className="w-[100px]">{task.taskDescr}</TableCell>
+                                                <TableCell className="w-[100px]">
+                                                    <Popover>
+                                                        <PopoverTrigger><Button>...</Button></PopoverTrigger>
+                                                        <PopoverContent className="flex flex-col bg-white p-2 shadow-[0_0_35px_rgba(0,0,0,0.35)] rounded-md z-[999]">
+                                                            <Button className={'mb-2'} onClick={()=>{router.push(`/dashboard/tasks/${task.taskId}`)}}>Открыть</Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild><Button variant="destructive">Снять с задачи</Button></AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Вы действительно хотите отменить задачу для сотрудника?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Данная задача больше не будет доступна для {selectedUser?.userName}
+                                                                    </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Отменить</AlertDialogCancel>
+                                                                    <AlertDialogAction asChild><Button variant="destructive" onClick={()=>{removeUserFromTask(task.taskId, selectedUser?.userId)}}>Снять с задачи</Button></AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

@@ -1,0 +1,71 @@
+services:
+  nextjs:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=example
+      - DB_NAME=mydb
+      - OLLAMA_URL=http://ollama:11434
+
+  api:
+    build: ./server
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mysql
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=example
+      - DB_NAME=mydb
+    volumes:
+      - ./server:/server
+
+  mysql:
+    image: docker.io/library/mysql:8.0.36
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: mydb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: example
+    depends_on:
+      - mysql
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+      - ./ollama:/models
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      ollama serve &
+      sleep 5 &&
+      ollama create vikhr -f /models/custom_vikhr.Modelfile || true &&
+      wait
+      "
+
+volumes:
+  mysql_data:
+  ollama_models:

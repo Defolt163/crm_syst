@@ -1,5 +1,3 @@
-const axios = require("axios");
-const { headers } = require('next/headers');
 const io = require("socket.io")(3001, {
   cors: {
     origin: "*",
@@ -15,7 +13,7 @@ io.on("connection", (socket) => {
   socket.on("taskCreate", (users) => {
     console.log(`Task Created for users: `, users);
     socket.broadcast.emit("taskCreated", users); // Остальные водители
-    fetch('http://localhost:3000/api/user-update-notification',{
+    fetch('http://nextjs:3000/api/user-update-notification',{
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
@@ -28,13 +26,13 @@ io.on("connection", (socket) => {
     }).then(()=>{
       console.log("UPDATED")
     }).catch((err)=>{
-      console.log(err)
+      console.log("Ошибка создания уведомления",err)
     })
   });
   socket.on("taskReport", (taskId, user, taskPart) => {
     console.log(`Пользователь ${user}, добавил отчет в задачу ${taskId}, по этапу ${taskPart}`);
-
-    fetch('http://localhost:3000/api/user-update-notification',{
+    console.log(`Запрос к API user-update-notification выполняется... Данные: ${taskId, user, taskPart}`);
+    fetch('http://nextjs:3000/api/user-update-notification',{
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
@@ -51,7 +49,7 @@ io.on("connection", (socket) => {
       getTaskData(taskId)
     })
     .catch((err)=>{
-      console.log(err)
+      console.log("ошибка в обновлении уведомлений", err)
     })
     socket.broadcast.emit("taskReported", Number(taskId), user, taskPart); // Остальные водители
   });
@@ -59,12 +57,13 @@ io.on("connection", (socket) => {
 
 
 async function analyzeWithAI(promt) {
+  console.log("Запрос к API api/generate выполняется...");
   try {
-    const response = await fetch('http://localhost:11434/api/generate', {
+    const response = await fetch('http://ollama:11434/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'custom_vikhr',  // Или 'phi3:mini'
+        model: 'vikhr',  // Или 'phi3:mini'
         prompt: promt,
         stream: false  // Для простого ответа
       })
@@ -83,8 +82,9 @@ async function analyzeWithAI(promt) {
   .then(response => console.log(response));
  */
 async function getTaskData(taskId){
+  console.log("Запрос к API server/task-data выполняется...");
   try{
-    const response = await fetch('http://localhost:3000/api/server/task-data',{
+    const response = await fetch('http://nextjs:3000/api/server/task-data',{
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
@@ -124,7 +124,8 @@ async function getTaskData(taskId){
   }
 }
 async function pushTaskReport(taskId, aiReport){
-  fetch('http://localhost:3000/api/server/task-data/ai-report',{
+  console.log("Запрос к API server/task-data/ai-report выполняется...");
+  fetch('http://nextjs:3000/api/server/task-data/ai-report',{
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
@@ -138,6 +139,6 @@ async function pushTaskReport(taskId, aiReport){
       console.log("OK")
     })
     .catch((err)=>{
-      console.log(err)
+      console.log("Ошибка записи в отчет", err)
     })
 }

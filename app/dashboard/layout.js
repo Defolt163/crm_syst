@@ -6,6 +6,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Button } from '@/components/ui/button';
 import { Toaster } from "@/components/ui/sonner";
 import { DataProvider } from "../components/DataContext";
+import { Theme } from "@radix-ui/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,5 @@ export default function RootLayout({ children }) {
           </SidebarProvider>
           {/* <CheckAuthDashboard/> */}
         </DataProvider>
-        
   );
 }

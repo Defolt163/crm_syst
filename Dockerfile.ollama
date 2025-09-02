@@ -1,0 +1,11 @@
+FROM ollama/ollama:latest
+
+# Устанавливаем bash
+RUN apk add --no-cache bash
+
+# Создаем скрипт инициализации
+COPY init-ollama.sh /init-ollama.sh
+RUN chmod +x /init-ollama.sh
+
+# Заменяем команду по умолчанию
+CMD ["/init-ollama.sh"]

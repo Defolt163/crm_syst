@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import PagesHeader from "../../components/PagesHeader/PagesHeader";
 import TableSearchBlock from "../../components/TableSearchBlock/TableSearchBlock";
 import TableTasks from "../../components/TableTasks/TableTasks";
@@ -37,8 +37,10 @@ export default function ActiveTaskPage(){
     return(
         <div>
             <PagesHeader header={"Задачи"} subheader={"Активные задачи"}/>
-            <TableSearchBlock selectedType={selectedType} setSelectedType={setSelectedType} selectedItems={selectedItems} setSelectedItems={setSelectedItems} searchTable={searchTable} setSearchTable={setSearchTable}/>
-            <TableTasks selectedType={selectedType} selectedItems={selectedItems} searchTable={searchTable}/>
+            <Suspense fallback={<div>Загрузка задач...</div>}>
+                <TableSearchBlock selectedType={selectedType} setSelectedType={setSelectedType} selectedItems={selectedItems} setSelectedItems={setSelectedItems} searchTable={searchTable} setSearchTable={setSearchTable}/>
+                <TableTasks selectedType={selectedType} selectedItems={selectedItems} searchTable={searchTable}/>
+            </Suspense>
         </div>
     )
 }

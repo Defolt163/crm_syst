@@ -6,7 +6,7 @@ const useSocket = (userData) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    const socket = io("wss://192.168.0.106:3001",{
+    const socket = io("ws://192.168.0.106:3001",{
       secure: true,
       rejectUnauthorized: false // если самоподписанный
     });

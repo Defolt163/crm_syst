@@ -22,10 +22,10 @@ export function DataProvider({ children }) {
         document.cookie = `${name}=${value}; ${expiresStr}; path=/`;
     }
     // Функция для получения данных о пользователе
-    function fetchUserData() {
+    async function fetchUserData() {
         const token = getCookie('token'); // Получаем токен из куки
     
-        return fetch('/api/login', {
+        return await fetch('/api/login', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
